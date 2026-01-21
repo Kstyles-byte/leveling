@@ -17,9 +17,10 @@ export default function LevelsPage() {
   const [levels, setLevels] = useState<LevelRow[]>([]);
   const [levelCode, setLevelCode] = useState("");
   const [durationDays, setDurationDays] = useState(7);
-  const [requirementsJson, setRequirementsJson] = useState(
-    JSON.stringify({ coding_hours: 3, gym_sets: 3 }, null, 2),
-  );
+  const [codingHours, setCodingHours] = useState(3);
+  const [gymSets, setGymSets] = useState(3);
+  const [noGoText, setNoGoText] = useState("cake, tiktok, junk food");
+  const [notes, setNotes] = useState("");
 
   useEffect(() => {
     void (async () => {
@@ -101,20 +102,71 @@ export default function LevelsPage() {
                 className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
               />
             </label>
-            <label className="grid gap-1">
-              <span className="text-xs font-semibold text-zinc-300">
-                Requirements (JSON)
-              </span>
-              <textarea
-                value={requirementsJson}
-                onChange={(e) => setRequirementsJson(e.target.value)}
-                className="h-40 w-full resize-none rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
-              />
-            </label>
+            <div className="rounded-xl border border-white/10 bg-black/25 p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-indigo-200">
+                Requirements
+              </div>
+              <div className="mt-3 grid gap-3">
+                <label className="grid gap-1">
+                  <span className="text-xs font-semibold text-zinc-300">
+                    Coding hours (per day)
+                  </span>
+                  <input
+                    value={codingHours}
+                    onChange={(e) => setCodingHours(Number(e.target.value) || 0)}
+                    type="number"
+                    min={0}
+                    className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-xs font-semibold text-zinc-300">
+                    Gym sets (per day)
+                  </span>
+                  <input
+                    value={gymSets}
+                    onChange={(e) => setGymSets(Number(e.target.value) || 0)}
+                    type="number"
+                    min={0}
+                    className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-xs font-semibold text-zinc-300">
+                    No-Go list (comma-separated)
+                  </span>
+                  <input
+                    value={noGoText}
+                    onChange={(e) => setNoGoText(e.target.value)}
+                    className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
+                    placeholder="cake, tiktok, junk food"
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-xs font-semibold text-zinc-300">
+                    Notes / narrative
+                  </span>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="h-20 w-full resize-none rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
+                    placeholder="Night prayer + stretch; no sugar after 7pm"
+                  />
+                </label>
+              </div>
+            </div>
             <button
               type="button"
               onClick={async () => {
-                const req = JSON.parse(requirementsJson || "{}");
+                const req = {
+                  coding_hours: Math.max(0, codingHours),
+                  gym_sets: Math.max(0, gymSets),
+                  no_go: noGoText
+                    .split(",")
+                    .map((x) => x.trim())
+                    .filter(Boolean),
+                  notes: notes.trim() || undefined,
+                };
                 const { data, error } = await supabase
                   .from("levels")
                   .insert({
@@ -136,6 +188,10 @@ export default function LevelsPage() {
                   );
 
                 setLevelCode("");
+                setCodingHours(3);
+                setGymSets(3);
+                setNoGoText("cake, tiktok, junk food");
+                setNotes("");
                 const { data: refreshed } = await supabase
                   .from("levels")
                   .select("id,level_code,duration_days,requirements,parent_level_id")
